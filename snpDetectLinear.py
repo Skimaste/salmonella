@@ -252,7 +252,7 @@ def find_substitutions_adaptive_corrected(
     min_neighbor_support: int = 0,
     context: int = 25,
     max_expected_random_pairs: float = None,
-    verbose: bool = False
+    verbose: bool = True
 ):
     """
     Assembly-free, reference-free linear-time substitution discovery.
@@ -504,12 +504,14 @@ def detect_snps(path_a: str, path_b: str, k: int = 31,
     Compatible drop-in replacement for snpDetect.detect_snps.
     """
     t0 = time.time()
+    t_count0 = time.time()
     counts_a, reads_a, bases_a = count_canonical_kmers(
         path_a, k=k, max_reads=max_reads, desc="Strain A (WT)", show_progress=verbose
     )
     counts_b, reads_b, bases_b = count_canonical_kmers(
         path_b, k=k, max_reads=max_reads, desc="Strain B (Var)", show_progress=verbose
     )
+    kmer_counting_time = time.time() - t_count0
 
     thresh_a = estimate_coverage_threshold(counts_a, min_coverage)
     thresh_b = estimate_coverage_threshold(counts_b, min_coverage)
@@ -548,6 +550,10 @@ def detect_snps(path_a: str, path_b: str, k: int = 31,
     else:
         variants_out = candidates
 
+    total_time = round(time.time() - t0, 2)
+    diagnostics["total_time_seconds"] = total_time
+    diagnostics["kmer_counting_seconds"] = round(kmer_counting_time, 2)
+
     result = VariantList(variants_out, diagnostics=diagnostics)
     result.counts_a = counts_a
     result.counts_b = counts_b
@@ -559,7 +565,7 @@ def detect_snps(path_a: str, path_b: str, k: int = 31,
 
     if verbose:
         print(f"[*] Found {len(result)} variant locus/loci ({len(candidates)} raw candidate records) "
-              f"in {time.time() - t0:.2f}s total execution time.\n")
+              f"in {total_time:.2f}s total execution time.\n")
 
     if return_diagnostics:
         return result, diagnostics
@@ -567,9 +573,10 @@ def detect_snps(path_a: str, path_b: str, k: int = 31,
 
 
 def format_report(variants: list, name_a: str = "Strain A", name_b: str = "Strain B",
-                  diagnostics: dict = None) -> str:
+                  diagnostics: dict = None, top: int = None) -> str:
     """Format called variants into a human-readable report."""
-    if not variants:
+    diag = diagnostics or getattr(variants, "diagnostics", None)
+    if not variants and not diag:
         return "No confident variants detected between the two datasets."
 
     lines = []
@@ -577,15 +584,34 @@ def format_report(variants: list, name_a: str = "Strain A", name_b: str = "Strai
     lines.append(f"LINEAR-TIME VARIATION CALLING REPORT: {name_a} vs {name_b}")
     lines.append("=" * 80)
 
-    diag = diagnostics or getattr(variants, "diagnostics", None)
+    total_found = len(variants)
+    display_variants = variants[:top] if top is not None and top > 0 else variants
+
     if diag:
         lines.append(f"Pipeline Diagnostics:")
+        if "total_time_seconds" in diag:
+            timing_line = f"  Total execution time: {diag['total_time_seconds']:.2f}s"
+            if "kmer_counting_seconds" in diag and "elapsed_seconds" in diag:
+                timing_line += f" (k-mer counting: {diag['kmer_counting_seconds']:.2f}s, flank search: {diag['elapsed_seconds']:.2f}s)"
+            lines.append(timing_line)
+        elif "elapsed_seconds" in diag:
+            lines.append(f"  Flank search time: {diag['elapsed_seconds']:.2f}s")
         lines.append(f"  Comparisons executed: {diag.get('comparisons_executed', 0):,}")
-        lines.append(f"  Candidate records evaluated: {diag.get('unique_candidates', len(variants)):,}")
+        lines.append(f"  Candidate records evaluated: {diag.get('unique_candidates', total_found):,}")
+        lines.append(f"  Total variant loci detected: {total_found:,}")
+        if top is not None and top < total_found:
+            lines.append(f"  Showing top: {len(display_variants):,} variants (ranked by confidence)")
         lines.append(f"  Flank search stop reason: {diag.get('stop_reason', 'completed')}")
         lines.append("-" * 80)
+    elif top is not None and top < total_found:
+        lines.append(f"Showing top {len(display_variants):,} of {total_found:,} detected variants:")
+        lines.append("-" * 80)
 
-    for idx, var in enumerate(variants, start=1):
+    if not display_variants:
+        lines.append("\nNo confident variants detected between the two datasets.")
+        return "\n".join(lines)
+
+    for idx, var in enumerate(display_variants, start=1):
         lines.append(f"\n[Variant {idx}] Type: {var['type']}")
         depth_a = var.get("depth_a", var.get("count_A", 0))
         depth_b = var.get("depth_b", var.get("count_B", 0))
@@ -629,6 +655,8 @@ def main():
     parser.add_argument("-k", "--kmer", type=int, default=31, help="k-mer length (default: 31)")
     parser.add_argument("-m", "--max-reads", type=int, default=None,
                         help="Maximum reads to sample from each file (e.g. 250000 for ultra-fast mode)")
+    parser.add_argument("-n", "--top", type=int, default=10,
+                        help="Limit output report to the top N highest-confidence variants (e.g. -n 10)")
     parser.add_argument("-c", "--min-coverage", type=int, default=None,
                         help="Coverage cutoff threshold (default: auto-detected)")
     parser.add_argument("-e", "--max-error", type=int, default=1,
@@ -637,8 +665,8 @@ def main():
                         help="Optional file path to write results")
     parser.add_argument("--max-flank", type=int, default=None,
                         help="Maximum flank size to start adaptive hash join (default: (k-1)//2)")
-    parser.add_argument("--min-flank", type=int, default=None,
-                        help="Minimum flank size to search (default: auto)")
+    parser.add_argument("--min-flank", type=int, default=8,
+                        help="Minimum flank size to search (default: 8) (set to None for auto)")
     parser.add_argument("--max-comparisons", type=int, default=250_000,
                         help="Strict total pairwise comparison budget (default: 250000)")
     parser.add_argument("--min-neighbor-support", type=int, default=1,
@@ -663,7 +691,7 @@ def main():
         verbose=True
     )
 
-    report = format_report(variants, name_a="Wild-Type", name_b="Variant")
+    report = format_report(variants, name_a="Wild-Type", name_b="Variant", top=args.top)
     print(report)
 
     if args.output:

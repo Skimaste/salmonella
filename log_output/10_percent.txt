@@ -1,0 +1,47 @@
+python snpDetectLinear.py \
+  data/salmonella-enterica.reads.fna \
+  data/salmonella-enterica-variant.reads.fna \
+  -k 31 \
+  -o output/report_10_percent.txt -m 200000
+
+Strain A (WT): 100%|████████████████████████████████████| 200000/200000 [00:21<00:00, 9436.08reads/s]
+    Loaded 200,000 reads (50,000,000 bp, 8,035,578 unique canonical k-mers)
+Strain B (Var): 100%|███████████████████████████████████| 200000/200000 [00:21<00:00, 9414.16reads/s]
+    Loaded 200,000 reads (50,000,000 bp, 8,013,890 unique canonical k-mers)
+[*] Coverage cutoffs: Strain A >= 4, Strain B >= 4
+[*] Candidate differential k-mers: 11,834 in Strain A, 11,703 in Strain B
+flank=15 | variable= 1 | pairs=0 | candidates=0 | 0.01s
+flank=14 | variable= 3 | pairs=2 | candidates=1 | 0.01s
+flank=13 | variable= 5 | pairs=6 | candidates=3 | 0.04s
+flank=12 | variable= 7 | pairs=10 | candidates=5 | 0.01s
+flank=11 | variable= 9 | pairs=14 | candidates=7 | 0.01s
+flank=10 | variable=11 | pairs=18 | candidates=9 | 0.01s
+flank= 9 | variable=13 | pairs=22 | candidates=11 | 0.04s
+flank= 8 | variable=15 | pairs=28 | candidates=13 | 0.01s
+[*] Found 1 variant locus/loci (13 raw candidate records) in 44.73s total execution time.
+
+================================================================================
+LINEAR-TIME VARIATION CALLING REPORT: Wild-Type vs Variant
+================================================================================
+Pipeline Diagnostics:
+  Total execution time: 44.73s (k-mer counting: 42.45s, flank search: 0.16s)
+  Comparisons executed: 100
+  Candidate records evaluated: 13
+  Total variant loci detected: 1
+  Flank search stop reason: minimum flank reached
+--------------------------------------------------------------------------------
+
+[Variant 1] Type: MNP
+  Wild-Type Allele: TTT (observed k-mer depth: 13x)
+  Variant Allele: GGG (observed k-mer depth: 7x)
+  Flank length: 14 bp | Supporting neighbor sides: 2/2
+
+  Genomic Context (Forward orientation):
+    Wild-Type: ... AGCTTCTGGGCGAG [TTT] ACGGGTTGTTAAAC ...
+    Variant: ... AGCTTCTGGGCGAG [GGG] ACGGGTTGTTAAAC ...
+  Complementary Strand:
+    Wild-Type: ... GTTTAACAACCCGT [AAA] CTCGCCCAGAAGCT ...
+    Variant: ... GTTTAACAACCCGT [CCC] CTCGCCCAGAAGCT ...
+--------------------------------------------------------------------------------
+
+Report saved to: output/report_10_percent.txt

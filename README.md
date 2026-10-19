@@ -44,12 +44,13 @@ python snpDetectLinear.py readsA.fasta readsB.fasta -k 31 -m 250000
 | :--- | :--- | :--- |
 | `readsA`, `readsB` | Paths to input FASTA reads for Strain A (WT) and Strain B (Variant) | *Required* |
 | `-k, --kmer` | $k$-mer length | `31` |
-| `-m, --max-reads` | Maximum reads to sample from each file (useful for fast testing) | `None` (all) |
+| `-m, --max-reads` | Maximum reads to sample from each file | `None` (all) |
+| `-n, --top` | Limit report output to the top N highest-confidence variants (e.g. `-n 10`) | `10` |
 | `-c, --min-coverage` | Explicit coverage cutoff threshold (solid $k$-mer filter) | Auto-detected |
 | `-e, --max-error` | Maximum count tolerated in the opposite strain for sequencing noise | `1` |
-| `-o, --output` | Path to save the human-readable text report | Console output |
+| `-o, --output` | Path to save the readable text report | Console output |
 | `--max-flank` | Maximum flank size to begin adaptive search | `(k-1)//2` |
-| `--min-flank` | Minimum flank anchor size to test | Auto |
+| `--min-flank` | Minimum flank anchor size to test | `8` |
 | `--max-comparisons` | Strict budget of pairwise comparisons per flank level | `250,000` |
 | `--min-neighbor-support` | Minimum supporting neighbor $k$-mer sides required (`0`, `1`, or `2`) | `1` |
 | `--raw-candidates` | Output unclustered raw candidate records across all flank levels | `False` |
