@@ -1,0 +1,21 @@
+================================================================================
+LINEAR-TIME VARIATION CALLING REPORT: Wild-Type vs Variant
+================================================================================
+Pipeline Diagnostics:
+  Comparisons executed: 242
+  Candidate records evaluated: 21
+  Flank search stop reason: minimum flank reached
+--------------------------------------------------------------------------------
+
+[Variant 1] Type: MNP
+  Wild-Type Allele: TTT (observed k-mer depth: 85x)
+  Variant Allele: GGG (observed k-mer depth: 73x)
+  Flank length: 14 bp | Supporting neighbor sides: 2/2
+
+  Genomic Context (Forward orientation):
+    Wild-Type: ... AGCTTCTGGGCGAG [TTT] ACGGGTTGTTAAAC ...
+    Variant: ... AGCTTCTGGGCGAG [GGG] ACGGGTTGTTAAAC ...
+  Complementary Strand:
+    Wild-Type: ... GTTTAACAACCCGT [AAA] CTCGCCCAGAAGCT ...
+    Variant: ... GTTTAACAACCCGT [CCC] CTCGCCCAGAAGCT ...
+--------------------------------------------------------------------------------
